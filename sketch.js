@@ -173,7 +173,7 @@ mic.open().then(() => {
 	// promise resolves when input is available
 	console.log("mic open");
 	// print the incoming mic levels in decibels
-	// setInterval(() => console.log(meter.getValue()), 100);
+	setInterval(() => console.log(meter.getValue()), 100);
 }).catch(e => {
 	// promise is rejected when the user doesn't have or allow mic access
 	console.log("mic not open");
@@ -239,7 +239,7 @@ function render() {
 
     // sc+=0.005;
     material.uniforms.time.value = t;
-    // material.uniforms.sc.value = sc;
+    material.uniforms.sc.value = sc;
     // material.uniforms.ba.value = ba;
     renderer.render(scene, camera);
 }
