@@ -58,8 +58,8 @@ float noise(vec3 p){
 
 float lines(vec2 uv, float offset){
   return smoothstep(
-    0., sc + offset*0.9,
-    abs(0.9*sin(uv.x*10.) + offset*0.1)
+    0., sc + offset*0.1,
+    abs(0.9*sin(uv.x*10.) + offset*1.0)
   );
 }
 
@@ -71,11 +71,11 @@ mat2 rotate2d(float angle){
   );
 }
 void main() {
-  float n = noise(vPosition+time/5.);
-  vec3 color1 = vec3(0.5,0.5,0.5);
-//   vec3 color2 = vec3(sc*n,sc*n,sc*n);
-  vec3 color2 = vec3(1.0,1.0,1.0);
-  vec3 color3 = vec3(0.0,0.0,0.0);
+  float n = noise(vPosition*sc/5.0-time/10.);
+  vec3 color1 = vec3(0.1,0.1,0.1);
+  vec3 color2 = vec3(sc*n,sc*n,sc*n);
+  // vec3 color2 = vec3(0.0,0.0,0.0);
+  vec3 color3 = vec3(sc, sc, sc);
   vec3 color4 = vec3(1.0,1.0,1.0);
   vec2 baseUV = rotate2d(n)*vPosition.xy*0.1;
   float basePattern = lines(baseUV, 0.1);
@@ -98,7 +98,7 @@ void main() {
     // );
 
     // float sinePulse = 0.01*cnoise(vec4((vUv.x*50. - time)*0.1), vec4(1.0)) ;
-    gl_FragColor = vec4( vec3(thirdBaseColor),1.);
+    gl_FragColor = vec4( vec3(thirdBaseColor),sc);
     // gl_FragColor = vec4( sinePulse,0.,0.,1.);
     // gl_FragColor = myimage;
     // gl_FragColor = vec4( pulse,0.,0.,1.);
@@ -162,39 +162,84 @@ void main() {
 
 
 //
+const pianoSamples = new Tone.ToneAudioBuffers({
+	C1: "./audio/16.mp3",
+	C2: "./audio/16.mp3",
+}, () => {
+	const player = new Tone.Player().toMaster();
+	// play one of the samples when they all load
+	player.buffer = pianoSamples.get("C2");
+	player.start();
+});
+
+// const player1 = new Tone.Player("./audio/16.mp3").toMaster();
+// player1.start();
+
+// Tone.loaded().then(() => {
+
+//   if(player1.loaded
+    
+//     ){
+  
+   
+//   Tone.Transport.start();
+//     Tone.Master.volume.value = 5;
+  
+    
+//     // Tone.Master.connect(analyser);
+
+
+//   }
+
+
+  
+// });
+// player1.loop = true;
+
+// Tone.loaded().then(() => {
+// Tone.Master.volume.value = 5;
+// });
+
+// function mousePressed() {
+//   userStartAudio();
+  
+//   // Tone.Transport.start();
+
+// }
+
 
 var analyser = new Tone.Analyser("fft", 16);
 analyser.smoothing = 0.9;
-// Tone.Master.connect(analyser);
+Tone.Master.connect(analyser);
 
-const meter = new Tone.Meter();
-const mic = new Tone.UserMedia().connect(meter);
-mic.open().then(() => {
-	// promise resolves when input is available
-	console.log("mic open");
-	// print the incoming mic levels in decibels
-	setInterval(() => console.log(meter.getValue()), 100);
-}).catch(e => {
-	// promise is rejected when the user doesn't have or allow mic access
-	console.log("mic not open");
-});
+// const meter = new Tone.Meter();
+// const mic = new Tone.UserMedia().connect(meter);
+// mic.open().then(() => {
+// 	// promise resolves when input is available
+// 	console.log("mic open");
+// 	// print the incoming mic levels in decibels
+// 	// setInterval(() => console.log(meter.getValue()), 100);
+// }).catch(e => {
+// 	// promise is rejected when the user doesn't have or allow mic access
+// 	console.log("mic not open");
+// });
 
-mic.connect(analyser);
+// mic.connect(analyser);
 
 
-var t = 0; var sc = Math.random(); var ba = Math.random();
+var t = 0; var sc;; var ba = Math.random();
 
 // Initialize the scene, camera and renderer
 var scene = new THREE.Scene();
 var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.z = 5;
+camera.position.z = 0;
 
 var renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
 // Create the sphere
-var geometry = new THREE.SphereBufferGeometry(5.5, 100, 100);
+var geometry = new THREE.SphereBufferGeometry(13.5, 10, 10);
 var material = new THREE.ShaderMaterial({
     extensions: {
       derivatives: "#extension GL_OES_standard_derivatives : enable"
@@ -231,16 +276,40 @@ scene.add(sphere);
 // Render the scene
 function render() {
   requestAnimationFrame(render);
+
+  const energies = analyser.getValue();
+
+  // for (let i = 0; i < energies.length; i++) {
+            const sum = energies.reduce((acc, val) => acc + val);
+            const avg = sum / energies.length;
+            console.log('Average loudness:', avg);
+            sc = mapRange(avg, 0, -70, 0.1, 1.5);
+        //     const x = Math.log2(i / fftData.length) * width;
+        //     const y = (1 - (fftData[i] / -100)) * height;
+        //     ctx.fillStyle = `hsl(${i / fftData.length * 360}, 100%, 50%)`;
+        //     ctx.fillRect(x, y, 1, 1);
+          // }
+
 //   uniforms.time.value += 0.1;
-    t += 0.05;
+    t += 0.01;
 
-    const energies = analyser.getValue();
-    sc = (energies[3]/-100)
-
-    // sc+=0.005;
+    
+    // sc = mapRange(energies[3], -30, -60, 0.1, 1)
+    // console.log("sc", energies[5])
+    sc+=0.005;
     material.uniforms.time.value = t;
     material.uniforms.sc.value = sc;
+    camera.rotateY(0.003)
+    // camera.rotateX(0.003)
     // material.uniforms.ba.value = ba;
     renderer.render(scene, camera);
 }
 render();
+
+// linearly maps value from the range (a..b) to (c..d)
+function mapRange (value, a, b, c, d) {
+  // first map value from (a..b) to (0..1)
+  value = (value - a) / (b - a);
+  // then map it from (0..1) to (c..d) and return it
+  return c + value * (d - c);
+}
